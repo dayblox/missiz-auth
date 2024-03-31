@@ -1,7 +1,9 @@
 import { z } from "zod"
 
 const env = z.object({
-  // PORT: z.coerce.number().min(1024).max(65535),
+  DB_TOKEN: z.string(),
+  DB_URL: z.string(),
+  ADMIN_TOKEN: z.string(),
 })
 
 const parsed = env.safeParse(Bun.env)

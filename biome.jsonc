@@ -1,6 +1,6 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.6.3/schema.json",
+  "$schema": "https://biomejs.dev/schemas/1.7.0/schema.json",
   "formatter": { "indentStyle": "space" },
   "javascript": { "formatter": { "semicolons": "asNeeded" } },
-  "json": { "parser": { "allowComments": true } }
+  "linter": { "rules": { "correctness": { "noUnusedImports": "warn" } } }
 }
