@@ -4,6 +4,7 @@ const env = z.object({
   DB_TOKEN: z.string(),
   DB_URL: z.string(),
   ADMIN_TOKEN: z.string(),
+  PORT: z.coerce.number(),
 })
 
 const parsed = env.safeParse(Bun.env)

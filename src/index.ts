@@ -1,43 +1,37 @@
-import { type Serve, env } from "bun"
+import { env } from "bun"
 import { and, eq, isNull, or, sql } from "drizzle-orm"
+import Elysia from "elysia"
 import db from "./db"
 import { users } from "./db/schema"
 
-export default {
-  async fetch(req) {
-    const { searchParams, pathname } = new URL(req.url)
-    switch (pathname) {
-      case "/new":
-      case "/list":
-        return searchParams.get("admin") === env.ADMIN_TOKEN
-          ? Response.json(
-              pathname === "/new"
-                ? (await createUser.execute({ id: crypto.randomUUID() }))[0].id
-                : await getUsers.all(),
-            )
-          : new Response(null, { status: 401 })
-      case "/check-in":
-      case "/check-out": {
-        const token = searchParams.get("token")
-        const ip = req.headers.get("x-forwarded-for")
-        if (!token || !ip)
-          return new Response("Please specify a product key.", { status: 401 })
-        if (!(await getUser.get({ token, ip })))
-          return new Response(
+new Elysia()
+  .get("/new", ({ query: { admin }, error }) =>
+    admin === env.ADMIN_TOKEN
+      ? createUser.execute({ id: crypto.randomUUID() })
+      : error(401),
+  )
+  .get("/list", ({ query: { admin }, error }) =>
+    admin === env.ADMIN_TOKEN ? getUsers.all() : error(401),
+  )
+  .get(
+    "/check-:action",
+    async ({
+      params: { action },
+      query: { token },
+      headers: { "x-forwarded-for": ip },
+      error,
+    }) =>
+      token && ip && (await getUser.get({ token, ip }))
+        ? void updateUser.execute({
+            token,
+            ip: action === "in" ? ip : null,
+          })
+        : error(
+            401,
             "This product key is either invalid or already being used, retry in a few minutes or contact the administrator.",
-            { status: 401 },
-          )
-        await updateUser.execute({
-          token,
-          ip: pathname === "/check-in" ? ip : null,
-        })
-        return new Response()
-      }
-      default:
-        return new Response(null, { status: 404 })
-    }
-  },
-} satisfies Serve
+          ),
+  )
+  .listen(env.PORT)
 
 const getUsers = db.query.users.findMany().prepare()
 
