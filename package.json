@@ -8,6 +8,7 @@
     "studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@elysiajs/swagger": "^1.0.4",
     "@libsql/client": "^0.6.0",
     "drizzle-orm": "^0.30.6",
     "elysia": "^1.0.13",

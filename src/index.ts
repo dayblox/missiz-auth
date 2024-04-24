@@ -1,35 +1,55 @@
+import swagger from "@elysiajs/swagger"
 import { env } from "bun"
 import { and, eq, isNull, or, sql } from "drizzle-orm"
 import Elysia from "elysia"
 import db from "./db"
 import { users } from "./db/schema"
 
+const userConf = {
+  detail: {
+    tags: ["User"],
+    parameters: [{ name: "token", in: "query", required: true }],
+  },
+}
+
+const adminConf = {
+  detail: {
+    tags: ["Admin"],
+    parameters: [{ name: "admin", in: "query", required: true }],
+  },
+}
+
 new Elysia()
-  .get("/new", ({ query: { admin }, error }) =>
-    admin === env.ADMIN_TOKEN
-      ? createUser.execute({ id: crypto.randomUUID() })
-      : error(401),
-  )
-  .get("/list", ({ query: { admin }, error }) =>
-    admin === env.ADMIN_TOKEN ? getUsers.all() : error(401),
+  .use(swagger({ exclude: ["", "/json"], path: "" }))
+  .get(
+    "/new",
+    ({ query: { admin }, error }) =>
+      admin === env.ADMIN_TOKEN
+        ? createUser.execute({ id: crypto.randomUUID() })
+        : error(401),
+    adminConf,
   )
   .get(
-    "/check-:action",
-    async ({
-      params: { action },
-      query: { token },
-      headers: { "x-forwarded-for": ip },
-      error,
-    }) =>
+    "/list",
+    ({ query: { admin }, error }) =>
+      admin === env.ADMIN_TOKEN ? getUsers.all() : error(401),
+    adminConf,
+  )
+  .get(
+    "/check-in",
+    async ({ query: { token }, headers: { "x-forwarded-for": ip }, error }) =>
       token && ip && (await getUser.get({ token, ip }))
-        ? void updateUser.execute({
-            token,
-            ip: action === "in" ? ip : null,
-          })
-        : error(
-            401,
-            "This product key is either invalid or already being used, retry in a few minutes or contact the administrator.",
-          ),
+        ? void updateUser.execute({ token, ip })
+        : error(401, env.ERROR),
+    userConf,
+  )
+  .get(
+    "/check-out",
+    async ({ query: { token }, headers: { "x-forwarded-for": ip }, error }) =>
+      token && ip && (await getUser.get({ token, ip }))
+        ? void updateUser.execute({ token, ip: null })
+        : error(401, env.ERROR),
+    userConf,
   )
   .listen(env.PORT)
 
