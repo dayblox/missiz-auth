@@ -7,18 +7,18 @@ import { users } from "./db/schema"
 
 new Elysia()
   .get(
+    "/list",
+    ({ query: { admin }, error }) =>
+      admin === env.ADMIN_TOKEN ? getUsers.all() : error(401),
+    adminDetails("List all tokens"),
+  )
+  .get(
     "/new",
     ({ query: { admin }, error }) =>
       admin === env.ADMIN_TOKEN
         ? createUser.execute({ id: crypto.randomUUID() })
         : error(401),
     adminDetails("Create a new token"),
-  )
-  .get(
-    "/list",
-    ({ query: { admin }, error }) =>
-      admin === env.ADMIN_TOKEN ? getUsers.all() : error(401),
-    adminDetails("List all tokens"),
   )
   .get(
     "/check-in",
@@ -47,6 +47,7 @@ new Elysia()
       },
       exclude: ["", "/json"],
       path: "",
+      scalarConfig: { layout: "classic" },
     }),
   )
   .listen(env.PORT)
@@ -81,11 +82,11 @@ const updateUser = db
   .where(eq(users.id, sql.placeholder("token")))
   .prepare()
 
-function adminDetails(description: string) {
+function adminDetails(summary: string) {
   return {
     detail: {
       tags: ["admin"],
-      description,
+      summary,
       parameters: [
         {
           name: "admin",
@@ -115,11 +116,11 @@ function adminDetails(description: string) {
   }
 }
 
-function userDetails(description: string) {
+function userDetails(summary: string) {
   return {
     detail: {
       tags: ["user"],
-      description,
+      summary,
       parameters: [
         {
           name: "token",
