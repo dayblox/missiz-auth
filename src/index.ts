@@ -8,31 +8,51 @@ import { users } from "./db/schema"
 new Elysia()
   .get(
     "/list",
-    ({ query: { admin }, error }) =>
-      admin === env.ADMIN_TOKEN ? getUsers.all() : error(401),
+    ({ query: { admin }, path, headers: { "x-forwarded-for": ip }, error }) =>
+      admin === env.ADMIN_TOKEN
+        ? getUsers
+            .all()
+            .finally(() => console.log(JSON.stringify({ path, ip })))
+        : error(401),
     adminDetails("List all tokens"),
   )
   .get(
     "/new",
-    ({ query: { admin }, error }) =>
+    ({ query: { admin }, path, headers: { "x-forwarded-for": ip }, error }) =>
       admin === env.ADMIN_TOKEN
-        ? createUser.execute({ id: crypto.randomUUID() })
+        ? createUser
+            .execute({ id: crypto.randomUUID() })
+            .finally(() => console.log(JSON.stringify({ path, ip })))
         : error(401),
     adminDetails("Create a new token"),
   )
   .get(
     "/check-in",
-    async ({ query: { token }, headers: { "x-forwarded-for": ip }, error }) =>
+    async ({
+      query: { token },
+      path,
+      headers: { "x-forwarded-for": ip },
+      error,
+    }) =>
       token && ip && (await getUser.get({ token, ip }))
-        ? void updateUser.execute({ token, ip })
+        ? void updateUser
+            .execute({ token, ip })
+            .then(() => console.log(JSON.stringify({ path, ip, token })))
         : error(401, env.ERROR),
     userDetails("Start using a token"),
   )
   .get(
     "/check-out",
-    async ({ query: { token }, headers: { "x-forwarded-for": ip }, error }) =>
+    async ({
+      query: { token },
+      path,
+      headers: { "x-forwarded-for": ip },
+      error,
+    }) =>
       token && ip && (await getUser.get({ token, ip }))
-        ? void updateUser.execute({ token, ip: null })
+        ? void updateUser
+            .execute({ token, ip: null })
+            .then(() => console.log(JSON.stringify({ path, ip, token })))
         : error(401, env.ERROR),
     userDetails("Free up a token"),
   )
